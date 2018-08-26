@@ -17,6 +17,13 @@ def sigmoid(x, deriv=False):
 		out = sigmoid(x)
 		return out * (1 - out)
     
+def makeData(size):
+    np.random.seed(2)
+    x = 2*np.random.random_sample((1,size))-1
+    y = 2*np.random.random_sample((1,size))-1
+    z = (x**2 + y**2 < 0.5)*1
+    return np.vstack((x,y,z))
+    
 class neuralNet:
     
     nLayers = 0
@@ -90,24 +97,43 @@ class neuralNet:
 data = np.array([[0,0],[1,1],[0,1],[1,0]])
 target = np.array([[0.0],[0.0],[1.0],[1.0]])
 
-NN = neuralNet((2,2,1))
+data = makeData(100)
+
+net = neuralNet((2,10,1))
 
 maxIterations = 100000
 minError = 1e-5
 
 for i in range(maxIterations + 1):
-    error = NN.back(data.T, target.T)
+    error = net.back(data[:-1:], data[-1::])
     if i % 2500 == 0:
         print("Iteration {0}\tError: {1:0.6f}".format(i,error))
     if error <= minError:
         print("Minimum error reached at iteration {0}".format(i))
         break
     
-out = NN.forward(data.T).T
+"""
+out = net.forward(data[:-1:]).T
+
 
 print('Input \tOutput \t\tTarget')
 for i in range(data.shape[0]):
-    print('{0}\t {1} \t{2}'.format(data[i], out[i], target[i]))
+    print('{0}\t {1} \t{2}'.format(data[i][:-1:], out[i], data[i][-1::]))
+"""
+    
+x = np.arange(-1, 1, 0.01) + np.zeros((200, 1))
 
-#print(net.layers)
+y = x.T[::-1]
+
+x = x.ravel()
+y = y.ravel()
+
+z = net.forward(np.vstack((x,y)))
+
+z = z.reshape(200,200)
+
+fig, ax = plt.subplots()
+ax.imshow(z)
+
+plt.show()
         
