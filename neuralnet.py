@@ -9,6 +9,7 @@ Created on Thu Aug 23 17:09:39 2018
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 def sigmoid(x, deriv=False):
 	if not deriv:
@@ -17,11 +18,20 @@ def sigmoid(x, deriv=False):
 		out = sigmoid(x)
 		return out * (1 - out)
     
-def makeData(size):
-    np.random.seed(2)
-    x = 2*np.random.random_sample((1,size))-1
-    y = 2*np.random.random_sample((1,size))-1
-    z = (x**2 + y**2 < 0.5)*1
+def makeData(size, uniform=False):
+    if uniform:
+        side = math.sqrt(size)
+        side = round(side)
+        x = np.arange(-1, 1, 1/side) + np.zeros((side, 1))
+        y = x.T[::-1]
+        x = x.ravel()
+        y = y.ravel()
+        
+    else:
+        np.random.seed(2)
+        x = 2*np.random.random_sample((1,size))-1
+        y = 2*np.random.random_sample((1,size))-1
+    z = (x**2 + y**2 < 0.75)*1
     return np.vstack((x,y,z))
     
 class neuralNet:
@@ -80,7 +90,7 @@ class neuralNet:
         dz.append(sigmoid(self.z[-1],True) * 2 * (self.layers[-1] - target))
         
         for i in reversed(range(self.nLayers-1)):
-            dweights.append(alpha * np.tensordot(dz[-1],self.layers[i].T,1))
+            dweights.append((1/data.shape[0]) * alpha * np.tensordot(dz[-1],self.layers[i].T,1))
             dz.append(sigmoid(self.z[i],True) * np.dot(self.weights[i].T[:-1:],dz[-1]))
 
             
@@ -97,9 +107,9 @@ class neuralNet:
 data = np.array([[0,0],[1,1],[0,1],[1,0]])
 target = np.array([[0.0],[0.0],[1.0],[1.0]])
 
-data = makeData(100)
+data = makeData(500)
 
-net = neuralNet((2,10,1))
+net = neuralNet((2,10,10,1))
 
 maxIterations = 100000
 minError = 1e-5
@@ -134,6 +144,6 @@ z = z.reshape(200,200)
 
 fig, ax = plt.subplots()
 ax.imshow(z)
-
+plt.savefig("image.png", bbox_inches='tight')
 plt.show()
         
