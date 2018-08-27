@@ -18,7 +18,7 @@ def sigmoid(x, deriv=False):
 		out = sigmoid(x)
 		return out * (1 - out)
     
-def makeData(size, uniform=False):
+def makeData(size, uniform=False, error=0):
     if uniform:
         side = math.sqrt(size)
         side = round(side)
@@ -28,10 +28,17 @@ def makeData(size, uniform=False):
         y = y.ravel()
         
     else:
-        np.random.seed(2)
+        np.random.seed(0)
         x = 2*np.random.random_sample((1,size))-1
         y = 2*np.random.random_sample((1,size))-1
+    #z = ((x**2 + y**2 < 0.25) + ((x-0.75)**2 + (y-0.75)**2 < 0.05))*1
     z = (x**2 + y**2 < 0.75)*1
+    print(z)
+    if error != 0:
+        noise = (np.random.random_sample((1,size)) <= error)*1
+        print(noise)
+        z = (noise + z) * ((1-noise) + (1-z))
+    print(z)
     return np.vstack((x,y,z))
     
 class neuralNet:
@@ -54,7 +61,7 @@ class neuralNet:
         #all layers before the last
         layerout = nodes[:-1]
         #pair them up and iterate through the pairs
-        np.random.seed(1)
+        np.random.seed(0)
         for (n,m) in zip(layerin,layerout):
             #+1 for the bias
             self.weights.append(2*np.random.random_sample((n,m+1))-1)
@@ -95,19 +102,19 @@ class neuralNet:
 
             
         dweights = dweights[::-1]
+        deriv = 0
         
         for i in range(len(self.weights)):
             self.weights[i] -= dweights[i]
+            deriv += (1/dweights[i].size)*np.sum(dweights[i])
         
-        return error
-        
-        
+        return (error, deriv)
         
 
-data = np.array([[0,0],[1,1],[0,1],[1,0]])
-target = np.array([[0.0],[0.0],[1.0],[1.0]])
+data = makeData(200, False, 0.05)
 
-data = makeData(500)
+batch = 4
+data = np.hsplit(data, batch)
 
 net = neuralNet((2,10,10,1))
 
@@ -115,10 +122,10 @@ maxIterations = 100000
 minError = 1e-5
 
 for i in range(maxIterations + 1):
-    error = net.back(data[:-1:], data[-1::])
+    error = net.back(data[i%batch][:-1:], data[i%batch][-1::], 0.1)
     if i % 2500 == 0:
-        print("Iteration {0}\tError: {1:0.6f}".format(i,error))
-    if error <= minError:
+        print("Iteration {0}\tError: {1:0.6f}\tDerivative: {2:0.6f}".format(i,error[0],error[1]))
+    if error[0] <= minError:
         print("Minimum error reached at iteration {0}".format(i))
         break
     
