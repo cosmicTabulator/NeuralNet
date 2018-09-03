@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
+def f(x, y):
+    return np.vstack(((y**2 + (x+0.5)**2 < 0.45)*1,((x-0.5)**2 + (y+0.2)**2 < 0.25)*1))
+
 def sigmoid(x, deriv=False):
 	if not deriv:
 		return 1 / (1 + np.exp (-x))
@@ -32,7 +35,7 @@ def makeData(size, uniform=False, error=0):
         x = 2*np.random.random_sample((1,size))-1
         y = 2*np.random.random_sample((1,size))-1
     #z = ((x**2 + y**2 < 0.25) + ((x-0.75)**2 + (y-0.75)**2 < 0.05))*1
-    z = (x**2 + y**2 < 0.75)*1
+    z = f(x,y)
     print(z)
     if error != 0:
         noise = (np.random.random_sample((1,size)) <= error)*1
@@ -53,6 +56,15 @@ class neuralNet:
     weights = []
     
     def __init__ (self, nodes):
+        
+        self.nLayers = 0
+        self.structure = []
+        # To clarify here, layers is the activation of the nodes on a layer,
+        # while z is the dot product result from the pervious 
+        # layer (before going through the sigmoid)
+        self.layers = []
+        self.z = []
+        self.weights = []
         
         self.nLayers = len(nodes)
         self.structure = nodes
@@ -111,46 +123,74 @@ class neuralNet:
         return (error, deriv)
         
 
-data = makeData(200, False, 0.05)
+data = makeData(500, False)
 
-batch = 4
+batch = 5
 data = np.hsplit(data, batch)
 
-net = neuralNet((2,10,10,1))
+networks = [(2,10,2), (2,10,10,2), (2,10,10,10,10,2), (2,10,10,10,10,10,10,2), (2,10,10,10,10,10,10,10,10,2), (2,10,10,10,10,10,10,10,10,10,10,2)]
 
-maxIterations = 100000
-minError = 1e-5
-
-for i in range(maxIterations + 1):
-    error = net.back(data[i%batch][:-1:], data[i%batch][-1::], 0.1)
-    if i % 2500 == 0:
-        print("Iteration {0}\tError: {1:0.6f}\tDerivative: {2:0.6f}".format(i,error[0],error[1]))
-    if error[0] <= minError:
-        print("Minimum error reached at iteration {0}".format(i))
-        break
+for n in networks:
     
-"""
-out = net.forward(data[:-1:]).T
-
-
-print('Input \tOutput \t\tTarget')
-for i in range(data.shape[0]):
-    print('{0}\t {1} \t{2}'.format(data[i][:-1:], out[i], data[i][-1::]))
-"""
+    net = neuralNet(n)
     
-x = np.arange(-1, 1, 0.01) + np.zeros((200, 1))
-
-y = x.T[::-1]
-
-x = x.ravel()
-y = y.ravel()
-
-z = net.forward(np.vstack((x,y)))
-
-z = z.reshape(200,200)
-
-fig, ax = plt.subplots()
-ax.imshow(z)
-plt.savefig("image.png", bbox_inches='tight')
-plt.show()
+    maxIterations = 100000
+    minError = 1e-5
+    
+    for i in range(maxIterations + 1):
+        error = net.back(data[i%batch][:-2:], data[i%batch][-2::], 0.1)
+        if i % 2500 == 0:
+            print("Iteration {0}\tError: {1:0.6f}\tDerivative: {2:0.6f}".format(i,error[0],error[1]))
+        if error[0] <= minError:
+            print("Minimum error reached at iteration {0}".format(i))
+            break
+        
+    """
+    out = net.forward(data[:-1:]).T
+    
+    
+    print('Input \tOutput \t\tTarget')
+    for i in range(data.shape[0]):
+        print('{0}\t {1} \t{2}'.format(data[i][:-1:], out[i], data[i][-1::]))
+    """
+        
+    x = np.arange(-1, 1, 0.01) + np.zeros((200, 1))
+    
+    y = x.T[::-1]
+    
+    x = x.ravel()
+    y = y.ravel()
+    
+    z = net.forward(np.vstack((x,y)))
+    target = f(x,y)
+    
+    fig = plt.figure(figsize=(8,8))
+    
+    z1 = z[0].reshape(200,200)
+    z2 = z[1].reshape(200,200)
+    target = target.reshape(200,200,2)
+    
+    #fig.add_subplot(2, 1, 1)
+    result = plt.imshow(z1)
+    result.set_cmap("hot")
+    plt.colorbar()
+    plt.savefig("layers2a" + str(len(n)-2) + ".png", bbox_inches='tight')
+    plt.title("Network Result")
+    
+    plt.clf()
+    #fig.add_subplot(2, 1, 2)
+    result = plt.imshow(z2)
+    result.set_cmap("hot")
+    plt.colorbar()
+    plt.savefig("layers2b" + str(len(n)-2) + ".png", bbox_inches='tight')
+    plt.title("Network Result")
+    
+    '''
+    fig.add_subplot(2, 1, 2)
+    expected = plt.imshow(target)
+    expected.set_cmap("hot")
+    plt.colorbar()
+    plt.title("Expected Result")
+    '''
+    #plt.show()
         
