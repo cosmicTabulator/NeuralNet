@@ -12,7 +12,7 @@ import numpy as np
 import math
 
 def f(x, y):
-    return np.vstack(((y**2 + (x+0.5)**2 < 0.45)*1,((x-0.5)**2 + (y+0.2)**2 < 0.25)*1))
+    return ((x**2 + y**2 < 0.25))
 
 def sigmoid(x, deriv=False):
 	if not deriv:
@@ -122,23 +122,22 @@ class neuralNet:
         
         return (error, deriv)
         
-
-data = makeData(500, False)
+networks = [2,4,10,20,40,100,200]
+    
+data = makeData(500, False, 0.1)
 
 batch = 5
 data = np.hsplit(data, batch)
 
-networks = [(2,10,2), (2,10,10,2), (2,10,10,10,10,2), (2,10,10,10,10,10,10,2), (2,10,10,10,10,10,10,10,10,2), (2,10,10,10,10,10,10,10,10,10,10,2)]
-
 for n in networks:
     
-    net = neuralNet(n)
+    net = neuralNet((2, n, n, 1))
     
     maxIterations = 100000
     minError = 1e-5
     
     for i in range(maxIterations + 1):
-        error = net.back(data[i%batch][:-2:], data[i%batch][-2::], 0.1)
+        error = net.back(data[i%batch][:-1:], data[i%batch][-1::], 0.1)
         if i % 2500 == 0:
             print("Iteration {0}\tError: {1:0.6f}\tDerivative: {2:0.6f}".format(i,error[0],error[1]))
         if error[0] <= minError:
@@ -162,27 +161,16 @@ for n in networks:
     y = y.ravel()
     
     z = net.forward(np.vstack((x,y)))
-    target = f(x,y)
+    
+    z = z.reshape(200,200)
     
     fig = plt.figure(figsize=(8,8))
     
-    z1 = z[0].reshape(200,200)
-    z2 = z[1].reshape(200,200)
-    target = target.reshape(200,200,2)
-    
     #fig.add_subplot(2, 1, 1)
-    result = plt.imshow(z1)
+    result = plt.imshow(z)
     result.set_cmap("hot")
     plt.colorbar()
-    plt.savefig("layers2a" + str(len(n)-2) + ".png", bbox_inches='tight')
-    plt.title("Network Result")
-    
-    plt.clf()
-    #fig.add_subplot(2, 1, 2)
-    result = plt.imshow(z2)
-    result.set_cmap("hot")
-    plt.colorbar()
-    plt.savefig("layers2b" + str(len(n)-2) + ".png", bbox_inches='tight')
+    plt.savefig("nodes3" + str(n) + ".png", bbox_inches='tight')
     plt.title("Network Result")
     
     '''
